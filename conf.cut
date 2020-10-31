@@ -1,0 +1,25 @@
+#conda install -c bioconda liftoff
+#conda install -c bioconda samtools
+
+sudo apt install tabix
+
+#---
+
+wget -NP . http://hgdownload.cse.ucsc.edu/goldenpath/hg38/bigZips/hg38.fa.gz
+    zcat hg38.fa.gz | bgzip > hg38.fa.bgz
+wget -NP . https://s3.amazonaws.com/nanopore-human-wgs/chm13/assemblies/chm13.draft_v1.0.fasta.gz
+    zcat chm13.draft_v1.0.fasta.gz | bgzip > chm13.draft_v1.0.fasta.bgz
+wget -NP . ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_35/gencode.v35.annotation.gff3.gz
+    zcat gencode.v35.annotation.gff3.gz | head -n 100 > short.gff
+
+#---
+
+# gunzip gencode.v35.annotation.gff3.gz
+zcat hg38.refGene.gtf.gz | awk '{print $1}' | grep -v '^#' | sort | uniq > chrs.txt
+
+for chr in $(cat chrs.txt); do zcat hg38.refGene.gtf.gz | grep -P "^${chr}\t" > chroms/${chr}.gff; done; #1
+
+#chr=chr10; /usr/bin/time liftoff -g ${chr}.gff -o ${chr}.lifted.gff chm13.draft_v1.0.fasta.bgz hg38.fa.bgz
+#liftoff -g hg38.refGene.gtf.gz -f feature_types.txt chm13.draft_v1.0.fasta.bgz hg38.fa.bgz
+for chr in $(cat chrs.txt); do liftoff -f feature_types.txt -g chroms/${chr}.gff -o output/${chr}.lifted.gff chm13.draft_v1.0.fasta.bgz hg38.fa.bgz; done;
+
